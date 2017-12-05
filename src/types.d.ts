@@ -1,3 +1,4 @@
+declare const __VERSION__: string;
 export class StyleSheet {
   options: InternalStyleSheetOptions;
   linked: boolean;
@@ -128,13 +129,14 @@ export type generateClassName = (rule: Rule, sheet?: StyleSheet) => string;
 export class Jss {
   constructor(options?: JssOptions);
   version: string;
+  plugins: PluginsRegistry;
   options: InternalJssOptions;
   generateClassName: generateClassName;
   setup(options?: JssOptions): Jss;
 
-  createStylSheet(
+  createStyleSheet(
     styles: object,
-    options: StyleSheetFactoryOptions
+    options?: StyleSheetFactoryOptions
   ): StyleSheet;
   removeStyleSheet(sheet: StyleSheet): Jss;
   createRule(
@@ -142,9 +144,9 @@ export class Jss {
     style?: JssStyle,
     options?: RuleFactoryOptions
   ): Rule;
+  use(...plugins: Array<Plugin>): Jss;
 }
 // TODO
-// Find a way to declare all types: Object|string|Array<Object>
 export type JssStyle = object;
 
 export interface Renderer {
@@ -169,7 +171,7 @@ export interface Renderer {
 
 export type RuleFactoryOptions = {
   selector?: string;
-  classes?: Object;
+  classes?: object;
   sheet?: StyleSheet;
   index?: number;
   jss?: Jss;
@@ -181,14 +183,14 @@ export type RuleOptions = {
   selector?: string;
   sheet?: StyleSheet;
   index?: number;
-  classes: Object;
+  classes: object;
   jss: Jss;
   generateClassName: generateClassName;
   Renderer: Renderer;
 };
 
 export type RuleListOptions = {
-  classes: Object;
+  classes: object;
   generateClassName: generateClassName;
   Renderer: Renderer;
   jss: Jss;
@@ -219,7 +221,28 @@ export type Plugin = {
   onProcessSheet?: (sheet?: StyleSheet) => void;
   onChangeValue?: (value: string, prop: string, rule: Rule) => string;
 };
-
+declare class PluginsRegistry {
+  hooks: Record<
+    | "onCreateRule"
+    | "onProcessRule"
+    | "onProcessStyle"
+    | "onProcessSheet"
+    | "onChangeValue"
+    | "onUpdate",
+    Array<() => any>
+  >;
+  onCreateRule(
+    name: string | undefined,
+    decl: JssStyle,
+    options: RuleOptions
+  ): Rule | null;
+  onProcessRule(rule: Rule): void;
+  onProcessStyle(style: JssStyle, rule: Rule, sheet?: StyleSheet): void;
+  onProcessSheet(sheet: StyleSheet): void;
+  onUpdate(data: object, rule: Rule, sheet: StyleSheet): void;
+  onChangeValue(value: string, prop: string, rule: Rule): string;
+  use(plugin: Plugin): void;
+}
 export type InsertionPoint = string | HTMLElement;
 
 type createGenerateClassName = () => generateClassName;
@@ -275,7 +298,7 @@ export type InternalStyleSheetOptions = {
   jss: Jss;
   sheet: StyleSheet;
   parent: ConditionalRule | KeyframesRule | StyleSheet;
-  classes: Object;
+  classes: object;
 };
 
 // These types are imported from indefinite-observable.  They should probably
